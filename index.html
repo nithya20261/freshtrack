@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreshTrack 2.0 — Smart Food Management System</title>
+  <meta name="description" content="FreshTrack 2.0 is an intelligent, privacy-first local food management system. Track pantry items, reduce food waste, calculate dynamic expiry priorities, match smart recipes, and organize shopping.">
+
+  <!-- Favicon SVG (Inline Lime Leaf) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥬</text></svg>">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3.3 CSS & Bootstrap Icons 1.11.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom Dark Forest Theme CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="App.toggleSidebar(false)"></div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fresh-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Application Shell Layout -->
+  <div id="app-layout">
+
+    <!-- Responsive Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar" aria-label="Main Navigation">
+      <div class="sidebar-brand">
+        <a href="#dashboard" class="brand-logo-wrap" onclick="App.navigate('dashboard'); return false;">
+          <div class="brand-icon-box">
+            <i class="bi bi-tree-fill"></i>
+          </div>
+          <div class="brand-text">
+            <h1>FreshTrack</h1>
+            <span class="brand-badge">2.0 Smart</span>
+          </div>
+        </a>
+        <button type="button" class="btn-close-custom d-lg-none" onclick="App.toggleSidebar(false)" aria-label="Close sidebar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li class="nav-section-title">Navigation</li>
+        <li>
+          <a id="nav-dashboard" class="sidebar-link active" onclick="App.navigate('dashboard')">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a id="nav-pantry" class="sidebar-link" onclick="App.navigate('pantry')">
+            <i class="bi bi-box-seam-fill"></i>
+            <span>My Pantry</span>
+            <span id="nav-pantry-count" class="nav-counter">0</span>
+          </a>
+        </li>
+        <li>
+          <a id="nav-use-first" class="sidebar-link" onclick="App.navigate('use-first')">
+            <i class="bi bi-hourglass-top"></i>
+            <span>Use First</span>
+            <span id="nav-urgent-count" class="nav-counter counter-urgent">0</span>
+          </a>
+        </li>
+        <li>
+          <a id="nav-recipes" class="sidebar-link" onclick="App.navigate('recipes')">
+            <i class="bi bi-book-fill"></i>
+            <span>Recipe Matches</span>
+          </a>
+        </li>
+        <li>
+          <a id="nav-shopping" class="sidebar-link" onclick="App.navigate('shopping')">
+            <i class="bi bi-cart-check-fill"></i>
+            <span>Shopping List</span>
+            <span id="nav-shopping-count" class="nav-counter">0</span>
+          </a>
+        </li>
+        <li>
+          <a id="nav-analytics" class="sidebar-link" onclick="App.navigate('analytics')">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Analytics &amp; History</span>
+          </a>
+        </li>
+
+        <li class="nav-section-title mt-3">Quick Actions</li>
+        <li>
+          <button type="button" class="sidebar-link text-start w-100 bg-transparent border-0" onclick="App.openAddPantryModal()">
+            <i class="bi bi-plus-circle-fill text-success"></i>
+            <span>Add Grocery</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-link text-start w-100 bg-transparent border-0" onclick="App.openAddShoppingModal()">
+            <i class="bi bi-cart-plus-fill text-warning"></i>
+            <span>Add Shopping Item</span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="storage-status-card">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="fw-bold text-white"><span class="status-dot"></span>Local Storage Active</span>
+            <i class="bi bi-shield-lock" title="Private local browser data"></i>
+          </div>
+          <p class="mb-0 text-muted" style="font-size: 0.72rem;">
+            Data stored strictly in this browser. Zero cloud tracking.
+          </p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Application Wrapper -->
+    <div class="main-wrapper">
+
+      <!-- Top Sticky Navbar -->
+      <header class="top-navbar">
+        <div class="page-headline">
+          <button type="button" class="mobile-menu-btn" onclick="App.toggleSidebar(true)" aria-label="Toggle menu">
+            <i class="bi bi-list"></i>
+          </button>
+          <h2 id="current-page-title">Dashboard</h2>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" class="btn-fresh-secondary d-none d-sm-inline-flex" onclick="App.openAddShoppingModal()">
+            <i class="bi bi-cart-plus"></i>
+            <span>Shopping</span>
+          </button>
+          <button type="button" class="btn-fresh-primary" onclick="App.openAddPantryModal()">
+            <i class="bi bi-plus-lg"></i>
+            <span>Add Item</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Body Container -->
+      <main class="content-body">
+
+        <!-- ========================================== -->
+        <!-- 1. DASHBOARD SECTION -->
+        <!-- ========================================== -->
+        <section id="section-dashboard" class="app-section">
+
+          <!-- Urgent Callout Banner (shown if items expire <= 3 days) -->
+          <div id="dashboard-urgent-banner" class="urgent-banner" style="display: none;">
+            <div class="urgent-banner-content">
+              <div class="urgent-pulse-icon">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+              </div>
+              <div>
+                <h4 class="fw-bold mb-1 text-white" id="urgent-banner-title">Urgent Expiry Alert</h4>
+                <p class="mb-0 text-white-50 small" id="urgent-banner-desc">You have items that require immediate attention to prevent food waste.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-fresh-danger text-nowrap" onclick="App.navigate('use-first')">
+              <span>View Urgent Items</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- Top Metric KPI Grid -->
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Total In Pantry</span>
+                  <div class="metric-icon-wrap icon-pantry">
+                    <i class="bi bi-box-seam"></i>
+                  </div>
+                </div>
+                <div id="metric-total-items" class="metric-value">0</div>
+                <div class="metric-meta">
+                  <i class="bi bi-check2"></i>
+                  <span id="metric-fresh-count">0 fresh &amp; stable</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Urgent / Expiring</span>
+                  <div class="metric-icon-wrap icon-urgent">
+                    <i class="bi bi-hourglass-bottom"></i>
+                  </div>
+                </div>
+                <div id="metric-urgent-items" class="metric-value text-warning">0</div>
+                <div class="metric-meta text-warning">
+                  <i class="bi bi-clock"></i>
+                  <span id="metric-expired-detail">0 expired</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Food Saved Rate</span>
+                  <div class="metric-icon-wrap icon-fresh">
+                    <i class="bi bi-heart-pulse"></i>
+                  </div>
+                </div>
+                <div id="metric-save-rate" class="metric-value text-success">100%</div>
+                <div class="metric-meta">
+                  <i class="bi bi-trophy"></i>
+                  <span id="metric-used-count">0 items consumed</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Inventory Health</span>
+                  <div class="metric-icon-wrap icon-saved">
+                    <i class="bi bi-shield-check"></i>
+                  </div>
+                </div>
+                <div id="metric-health-score" class="metric-value">95</div>
+                <div class="metric-meta">
+                  <span id="metric-health-desc">Optimal food turnover</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Grid -->
+          <div class="fresh-card mb-4">
+            <div class="fresh-card-header">
+              <h3 class="fresh-card-title"><i class="bi bi-lightning-charge-fill"></i> Quick Actions</h3>
+            </div>
+            <div class="row g-2">
+              <div class="col-6 col-md-3">
+                <button type="button" class="quick-action-pill w-100 justify-content-center" onclick="App.openAddPantryModal()">
+                  <i class="bi bi-plus-circle-fill text-success"></i>
+                  <span>Add Grocery</span>
+                </button>
+              </div>
+              <div class="col-6 col-md-3">
+                <button type="button" class="quick-action-pill w-100 justify-content-center" onclick="App.navigate('use-first')">
+                  <i class="bi bi-fire text-danger"></i>
+                  <span>Use First Queue</span>
+                </button>
+              </div>
+              <div class="col-6 col-md-3">
+                <button type="button" class="quick-action-pill w-100 justify-content-center" onclick="App.navigate('recipes')">
+                  <i class="bi bi-magic text-warning"></i>
+                  <span>Recipe Matches</span>
+                </button>
+              </div>
+              <div class="col-6 col-md-3">
+                <button type="button" class="quick-action-pill w-100 justify-content-center" onclick="App.openAddShoppingModal()">
+                  <i class="bi bi-cart-plus-fill text-info"></i>
+                  <span>Add to Shopping</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spotlight & Recent Activity Split -->
+          <div class="row g-4">
+            <!-- Use First Spotlight on Dashboard -->
+            <div class="col-lg-7">
+              <div class="fresh-card h-100">
+                <div class="fresh-card-header">
+                  <h3 class="fresh-card-title"><i class="bi bi-alarm-fill text-warning"></i> Priority Items to Consume</h3>
+                  <button type="button" class="btn btn-sm btn-link text-decoration-none text-lime p-0" onclick="App.navigate('use-first')">
+                    View All <i class="bi bi-arrow-right"></i>
+                  </button>
+                </div>
+                <div id="dashboard-urgent-list" class="d-flex flex-column gap-2">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity Feed -->
+            <div class="col-lg-5">
+              <div class="fresh-card h-100">
+                <div class="fresh-card-header">
+                  <h3 class="fresh-card-title"><i class="bi bi-clock-history"></i> Recent Activity</h3>
+                  <button type="button" class="btn btn-sm btn-link text-decoration-none text-lime p-0" onclick="App.navigate('analytics')">
+                    History <i class="bi bi-arrow-right"></i>
+                  </button>
+                </div>
+                <ul id="dashboard-activity-feed" class="activity-feed-list mb-0">
+                  <!-- Rendered dynamically -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 2. MY PANTRY SECTION -->
+        <!-- ========================================== -->
+        <section id="section-pantry" class="app-section" style="display: none;">
+
+          <!-- Controls Bar: Search, Category Filter, Storage Filter, Status Filter, Sort -->
+          <div class="fresh-card mb-4">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-end-0 text-muted" style="border-color: var(--border-subtle) !important;">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" id="pantry-search-input" class="form-control fresh-input border-start-0 ps-0" placeholder="Search groceries..." oninput="App.renderPantry()">
+                </div>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="pantry-filter-category" class="form-select fresh-select" onchange="App.renderPantry()">
+                  <option value="all">All Categories</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="pantry-filter-storage" class="form-select fresh-select" onchange="App.renderPantry()">
+                  <option value="all">All Storage Locations</option>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="pantry-filter-status" class="form-select fresh-select" onchange="App.renderPantry()">
+                  <option value="all">All Expiry Statuses</option>
+                  <option value="expired">Expired</option>
+                  <option value="urgent">Urgent (&le; 1 Day)</option>
+                  <option value="soon">Approaching (&le; 7 Days)</option>
+                  <option value="good">Fresh (&gt; 7 Days)</option>
+                  <option value="opened">Opened Only</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <select id="pantry-sort-by" class="form-select fresh-select" onchange="App.renderPantry()">
+                  <option value="expiry-asc">Expiry: Earliest First</option>
+                  <option value="expiry-desc">Expiry: Latest First</option>
+                  <option value="name-asc">Name: A to Z</option>
+                  <option value="name-desc">Name: Z to A</option>
+                  <option value="qty-desc">Quantity: High to Low</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Active filter chips & total count badge -->
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3 pt-2 border-top border-secondary-subtle">
+              <div class="text-muted small">
+                Showing <strong id="pantry-showing-count" class="text-white">0</strong> items in inventory
+              </div>
+              <button type="button" class="btn btn-sm text-lime p-0 text-decoration-none" onclick="App.clearPantryFilters()">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+              </button>
+            </div>
+          </div>
+
+          <!-- Pantry Items Grid -->
+          <div id="pantry-items-grid" class="row g-3">
+            <!-- Dynamic items rendered here -->
+          </div>
+
+          <!-- Empty State for Pantry -->
+          <div id="pantry-empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+              <i class="bi bi-basket3"></i>
+            </div>
+            <h4 class="empty-state-title">No groceries found</h4>
+            <p class="empty-state-text">Your pantry list is empty for the current search or filters. Add an item or clear filters to view inventory.</p>
+            <button type="button" class="btn-fresh-primary" onclick="App.openAddPantryModal()">
+              <i class="bi bi-plus-lg"></i> Add New Grocery
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 3. USE FIRST SECTION -->
+        <!-- ========================================== -->
+        <section id="section-use-first" class="app-section" style="display: none;">
+
+          <!-- Explanation Banner -->
+          <div class="fresh-card mb-4" style="background: linear-gradient(135deg, rgba(31, 67, 56, 0.7), rgba(20, 43, 36, 0.9));">
+            <div class="d-flex align-items-center gap-3">
+              <div class="brand-icon-box" style="background: linear-gradient(135deg, var(--coral-danger), var(--amber)); color: white;">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+              <div>
+                <h3 class="fw-bold mb-1 text-white">Smart "Use First" Prioritization Queue</h3>
+                <p class="mb-0 text-white-50 small">
+                  Dynamically calculated based on exact calendar expiry dates and package opened states.
+                  Items here are at risk of spoiling if not consumed promptly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Use First Items List -->
+          <div id="use-first-items-list" class="d-flex flex-column gap-3 mb-4">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Empty State for Use First -->
+          <div id="use-first-empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon text-success">
+              <i class="bi bi-check2-circle"></i>
+            </div>
+            <h4 class="empty-state-title">No urgent food waste risks!</h4>
+            <p class="empty-state-text">All your pantry items have safe expiration dates. Keep up the great food management!</p>
+            <button type="button" class="btn-fresh-secondary" onclick="App.navigate('recipes')">
+              <i class="bi bi-book"></i> Browse Recipes
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 4. RECIPES SECTION -->
+        <!-- ========================================== -->
+        <section id="section-recipes" class="app-section" style="display: none;">
+
+          <!-- Filter & Search Controls -->
+          <div class="fresh-card mb-4">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-5">
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-end-0 text-muted" style="border-color: var(--border-subtle) !important;">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" id="recipe-search-input" class="form-control fresh-input border-start-0 ps-0" placeholder="Search recipes by name or ingredient..." oninput="App.renderRecipes()">
+                </div>
+              </div>
+
+              <div class="col-6 col-md-4">
+                <select id="recipe-filter-match" class="form-select fresh-select" onchange="App.renderRecipes()">
+                  <option value="all">All Match Levels</option>
+                  <option value="ready">100% Ready (All Ingredients In Pantry)</option>
+                  <option value="high">High Match (&ge; 75%)</option>
+                  <option value="rescues">Rescues Urgent / Expiring Groceries</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <select id="recipe-filter-category" class="form-select fresh-select" onchange="App.renderRecipes()">
+                  <option value="all">All Meal Categories</option>
+                  <option value="Breakfast">Breakfast &amp; Brunch</option>
+                  <option value="Lunch / Dinner">Lunch &amp; Dinner</option>
+                  <option value="Snacks">Snacks &amp; Quick Bites</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2 border-top border-secondary-subtle d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted small">
+              <div>
+                Matches calculated in real-time against your currently in-stock pantry items.
+              </div>
+              <div class="text-lime fw-bold">
+                <span id="recipe-ready-count">0</span> recipes ready to cook immediately!
+              </div>
+            </div>
+          </div>
+
+          <!-- Recipe Cards Grid -->
+          <div id="recipe-cards-grid" class="row g-4">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Empty State for Recipes -->
+          <div id="recipe-empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+              <i class="bi bi-journal-x"></i>
+            </div>
+            <h4 class="empty-state-title">No matching recipes found</h4>
+            <p class="empty-state-text">Try adjusting your search query or match level filter.</p>
+            <button type="button" class="btn-fresh-secondary" onclick="App.clearRecipeFilters()">
+              Reset Recipe Filters
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 5. SHOPPING LIST SECTION -->
+        <!-- ========================================== -->
+        <section id="section-shopping" class="app-section" style="display: none;">
+
+          <!-- Shopping Header Controls -->
+          <div class="fresh-card mb-4">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-5">
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-end-0 text-muted" style="border-color: var(--border-subtle) !important;">
+                    <i class="bi bi-search"></i>
+                  </span>
+                  <input type="text" id="shopping-search-input" class="form-control fresh-input border-start-0 ps-0" placeholder="Search shopping list..." oninput="App.renderShopping()">
+                </div>
+              </div>
+
+              <div class="col-6 col-md-3">
+                <select id="shopping-filter-status" class="form-select fresh-select" onchange="App.renderShopping()">
+                  <option value="all">All Items</option>
+                  <option value="pending">To Buy (Pending)</option>
+                  <option value="purchased">Purchased</option>
+                </select>
+              </div>
+
+              <div class="col-6 col-md-4 d-flex justify-content-end gap-2">
+                <button type="button" class="btn-fresh-secondary" onclick="App.clearPurchasedShopping()">
+                  <i class="bi bi-trash3"></i>
+                  <span>Clear Bought</span>
+                </button>
+                <button type="button" class="btn-fresh-primary" onclick="App.openAddShoppingModal()">
+                  <i class="bi bi-plus-lg"></i>
+                  <span>Add Item</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Shopping List Summary info -->
+            <div class="mt-3 pt-2 border-top border-secondary-subtle d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted small">
+              <div>
+                Purchased items can be transferred directly to your pantry with 1 click!
+              </div>
+              <div>
+                <span id="shopping-pending-count" class="badge-warning px-2 py-1 rounded">0 To Buy</span>
+                <span id="shopping-bought-count" class="badge-good px-2 py-1 rounded ms-1">0 Purchased</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shopping List Items Container -->
+          <div id="shopping-items-list">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Empty State for Shopping -->
+          <div id="shopping-empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon">
+              <i class="bi bi-cart-x"></i>
+            </div>
+            <h4 class="empty-state-title">Shopping list is clear</h4>
+            <p class="empty-state-text">No items need to be purchased right now. Add items manually or use recipe missing ingredients to populate.</p>
+            <button type="button" class="btn-fresh-primary" onclick="App.openAddShoppingModal()">
+              <i class="bi bi-cart-plus"></i> Add Item to Buy
+            </button>
+          </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 6. ANALYTICS & HISTORY SECTION -->
+        <!-- ========================================== -->
+        <section id="section-analytics" class="app-section" style="display: none;">
+
+          <!-- High-level Analytics Summary Cards -->
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Food Waste Rate</span>
+                  <div class="metric-icon-wrap icon-urgent">
+                    <i class="bi bi-pie-chart"></i>
+                  </div>
+                </div>
+                <div id="analytics-waste-rate" class="metric-value text-danger">0%</div>
+                <div class="metric-meta text-muted">
+                  <span id="analytics-wasted-items-count">0 items discarded</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Food Saved / Consumed</span>
+                  <div class="metric-icon-wrap icon-fresh">
+                    <i class="bi bi-check2-all"></i>
+                  </div>
+                </div>
+                <div id="analytics-saved-rate" class="metric-value text-success">100%</div>
+                <div class="metric-meta text-muted">
+                  <span id="analytics-used-items-count">0 items utilized</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Total Inventory Tracked</span>
+                  <div class="metric-icon-wrap icon-pantry">
+                    <i class="bi bi-database"></i>
+                  </div>
+                </div>
+                <div id="analytics-total-pantry-count" class="metric-value">0</div>
+                <div class="metric-meta text-muted">Active items in stock</div>
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3">
+              <div class="metric-card">
+                <div class="metric-header">
+                  <span class="metric-label">Efficiency Score</span>
+                  <div class="metric-icon-wrap icon-saved">
+                    <i class="bi bi-award"></i>
+                  </div>
+                </div>
+                <div id="analytics-efficiency-score" class="metric-value text-lime">95</div>
+                <div class="metric-meta text-muted">Based on real consumption logs</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mb-4">
+            <!-- Category Distribution & Consumption Breakdown -->
+            <div class="col-lg-7">
+              <div class="fresh-card h-100">
+                <div class="fresh-card-header">
+                  <h3 class="fresh-card-title"><i class="bi bi-bar-chart-line"></i> Category Inventory &amp; Consumption</h3>
+                </div>
+                <div id="analytics-category-bars" class="d-flex flex-column gap-3">
+                  <!-- Category bars dynamically rendered -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Waste Reasons & Data Management -->
+            <div class="col-lg-5">
+              <div class="d-flex flex-column gap-4 h-100">
+
+                <!-- Waste Reasons Breakdown Card -->
+                <div class="fresh-card">
+                  <div class="fresh-card-header">
+                    <h3 class="fresh-card-title"><i class="bi bi-exclamation-diamond text-danger"></i> Waste Reasons Breakdown</h3>
+                  </div>
+                  <div id="analytics-waste-reasons-list" class="d-flex flex-column gap-2">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Backup, Import, and Reset Controls -->
+                <div class="fresh-card">
+                  <div class="fresh-card-header">
+                    <h3 class="fresh-card-title"><i class="bi bi-gear-fill"></i> Data Ownership &amp; Backup</h3>
+                  </div>
+                  <p class="text-muted small mb-3">
+                    All your records are stored locally in this browser's localStorage. You can export a JSON backup or restore anytime.
+                  </p>
+                  <div class="d-flex flex-column gap-2">
+                    <div class="d-flex gap-2">
+                      <button type="button" class="btn-fresh-secondary w-50 justify-content-center" onclick="App.exportData()">
+                        <i class="bi bi-download"></i> Export JSON
+                      </button>
+                      <button type="button" class="btn-fresh-secondary w-50 justify-content-center" onclick="App.openImportModal()">
+                        <i class="bi bi-upload"></i> Import Backup
+                      </button>
+                    </div>
+                    <button type="button" class="btn-fresh-danger w-100 justify-content-center mt-2" onclick="App.openResetModal()">
+                      <i class="bi bi-arrow-counterclockwise"></i> Reset All Data to Samples
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Full Activity Log Table -->
+          <div class="fresh-card">
+            <div class="fresh-card-header">
+              <h3 class="fresh-card-title"><i class="bi bi-journals"></i> Full Audit Activity Log</h3>
+              <div class="d-flex align-items-center gap-2">
+                <select id="analytics-activity-filter" class="form-select fresh-select py-1 px-2" style="font-size: 0.8rem;" onchange="App.renderAnalytics()">
+                  <option value="all">All Action Types</option>
+                  <option value="add">Additions</option>
+                  <option value="use">Consumptions</option>
+                  <option value="waste">Discards / Waste</option>
+                  <option value="shop">Shopping</option>
+                  <option value="cook">Cooked Recipes</option>
+                  <option value="delete">Deletions</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-dark table-hover align-middle mb-0" style="background-color: transparent;">
+                <thead>
+                  <tr class="text-muted" style="border-bottom: 1px solid var(--border-subtle); font-size: 0.8rem;">
+                    <th>ACTION</th>
+                    <th>EVENT</th>
+                    <th>DETAILS</th>
+                    <th class="text-end">TIME</th>
+                  </tr>
+                </thead>
+                <tbody id="analytics-full-activity-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- App Footer with Browser Storage Disclaimer -->
+      <footer class="py-3 px-4 text-center border-top border-secondary-subtle" style="background-color: var(--bg-deep); font-size: 0.78rem; color: var(--ivory-subtle);">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+          <div>
+            <strong>FreshTrack 2.0</strong> — Smart Food Management System. Privacy-first, zero cloud dependencies.
+          </div>
+          <div>
+            <i class="bi bi-info-circle me-1"></i> Data is stored locally in the current browser and is not synchronized across devices.
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALS -->
+  <!-- ========================================== -->
+
+  <!-- 1. Add / Edit Pantry Modal -->
+  <div class="modal fade" id="pantryItemModal" tabindex="-1" aria-labelledby="pantryItemModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="pantry-item-form" onsubmit="App.handleSavePantryItem(event)">
+          <input type="hidden" id="pantry-form-id">
+          <div class="modal-header">
+            <h5 class="modal-title" id="pantryItemModalTitle">
+              <i class="bi bi-box-seam text-lime"></i> <span id="pantry-modal-heading">Add Grocery Item</span>
+            </h5>
+            <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Item Name -->
+            <div class="mb-3">
+              <label for="pantry-form-name" class="form-label">Grocery Name *</label>
+              <input type="text" id="pantry-form-name" class="form-control fresh-input" placeholder="e.g. Baby Spinach, Whole Milk, Eggs" required>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <!-- Category -->
+              <div class="col-6">
+                <label for="pantry-form-category" class="form-label">Category *</label>
+                <select id="pantry-form-category" class="form-select fresh-select" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <!-- Storage Location -->
+              <div class="col-6">
+                <label for="pantry-form-storage" class="form-label">Storage Location *</label>
+                <select id="pantry-form-storage" class="form-select fresh-select" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <!-- Quantity -->
+              <div class="col-6">
+                <label for="pantry-form-qty" class="form-label">Quantity *</label>
+                <input type="number" id="pantry-form-qty" class="form-control fresh-input" min="0.1" step="any" placeholder="1" required>
+              </div>
+              <!-- Unit -->
+              <div class="col-6">
+                <label for="pantry-form-unit" class="form-label">Unit *</label>
+                <select id="pantry-form-unit" class="form-select fresh-select" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <!-- Purchase Date -->
+              <div class="col-6">
+                <label for="pantry-form-purchase-date" class="form-label">Date Purchased</label>
+                <input type="date" id="pantry-form-purchase-date" class="form-control fresh-input">
+              </div>
+              <!-- Expiry Date -->
+              <div class="col-6">
+                <label for="pantry-form-expiry-date" class="form-label">Expiry Date *</label>
+                <input type="date" id="pantry-form-expiry-date" class="form-control fresh-input" required>
+              </div>
+            </div>
+
+            <!-- Quick Expiry Helpers -->
+            <div class="mb-3">
+              <label class="form-label d-block text-muted" style="font-size: 0.78rem;">Quick Date Presets:</label>
+              <div class="d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm btn-dark border border-secondary" onclick="App.setFormExpiryDays(2)">+2 Days</button>
+                <button type="button" class="btn btn-sm btn-dark border border-secondary" onclick="App.setFormExpiryDays(5)">+5 Days</button>
+                <button type="button" class="btn btn-sm btn-dark border border-secondary" onclick="App.setFormExpiryDays(7)">+1 Week</button>
+                <button type="button" class="btn btn-sm btn-dark border border-secondary" onclick="App.setFormExpiryDays(14)">+2 Weeks</button>
+                <button type="button" class="btn btn-sm btn-dark border border-secondary" onclick="App.setFormExpiryDays(30)">+1 Month</button>
+              </div>
+            </div>
+
+            <!-- Opened status toggle -->
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="pantry-form-opened" style="accent-color: var(--lime);">
+              <label class="form-check-label text-white-50" for="pantry-form-opened">
+                Package is already opened (increases urgency score)
+              </label>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-2">
+              <label for="pantry-form-notes" class="form-label">Notes (optional)</label>
+              <textarea id="pantry-form-notes" class="form-control fresh-input" rows="2" placeholder="e.g. Organic, top shelf, use half for salad"></textarea>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-fresh-primary">
+              <i class="bi bi-check-lg"></i> <span id="pantry-modal-submit-text">Save Grocery</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Log Usage / Waste Modal (Partial or Full) -->
+  <div class="modal fade" id="useWasteModal" tabindex="-1" aria-labelledby="useWasteModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="use-waste-form" onsubmit="App.handleSaveUsage(event)">
+          <input type="hidden" id="use-waste-item-id">
+          <div class="modal-header">
+            <h5 class="modal-title" id="useWasteModalTitle">
+              <i class="bi bi-arrow-left-right text-lime"></i> Log Usage / Discard
+            </h5>
+            <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="p-3 mb-3 rounded" style="background-color: var(--bg-deep); border: 1px solid var(--border-subtle);">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <h5 id="use-waste-item-name" class="fw-bold mb-0 text-white">Item Name</h5>
+                <span id="use-waste-stock-badge" class="badge-good px-2 py-1 rounded small">Current: 2 pcs</span>
+              </div>
+              <div id="use-waste-expiry-status" class="small text-muted">Expires in 3 days</div>
+            </div>
+
+            <!-- Action Type: Used vs Wasted -->
+            <div class="mb-3">
+              <label class="form-label">Action *</label>
+              <div class="d-flex gap-2">
+                <button type="button" id="btn-action-used" class="btn-fresh-primary w-50 justify-content-center" onclick="App.setUseActionType('used')">
+                  <i class="bi bi-check-circle-fill"></i> Consumed / Used
+                </button>
+                <button type="button" id="btn-action-wasted" class="btn-fresh-secondary w-50 justify-content-center" onclick="App.setUseActionType('wasted')">
+                  <i class="bi bi-trash3-fill"></i> Discarded / Wasted
+                </button>
+              </div>
+            </div>
+
+            <!-- Quantity to record -->
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label for="use-waste-qty-input" class="form-label mb-0">Quantity to Record *</label>
+                <button type="button" class="btn btn-sm btn-link text-lime p-0 text-decoration-none" onclick="App.setUseAllQty()">
+                  Use Entire Amount
+                </button>
+              </div>
+              <div class="input-group">
+                <input type="number" id="use-waste-qty-input" class="form-control fresh-input" min="0.1" step="any" required>
+                <span id="use-waste-unit-label" class="input-group-text bg-transparent text-white" style="border-color: var(--border-subtle) !important;">pcs</span>
+              </div>
+            </div>
+
+            <!-- Reason (Shown especially when wasted) -->
+            <div class="mb-2">
+              <label for="use-waste-reason" class="form-label">Reason / Notes</label>
+              <select id="use-waste-reason" class="form-select fresh-select mb-2">
+                <option value="Cooked in meal">Cooked in meal</option>
+                <option value="Eaten as snack">Eaten as snack</option>
+                <option value="Shared / Given away">Shared / Given away</option>
+                <option value="Spoiled / Moldy">Spoiled / Moldy</option>
+                <option value="Past expiration date">Past expiration date</option>
+                <option value="Forgotten in fridge">Forgotten in fridge</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" id="use-waste-submit-btn" class="btn-fresh-primary">
+              <i class="bi bi-check2"></i> Confirm Record
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Safe Deletion Confirmation Modal -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger" id="deleteConfirmModalTitle">
+            <i class="bi bi-exclamation-triangle-fill"></i> Confirm Deletion
+          </h5>
+          <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body text-center py-4">
+          <p class="mb-2">Are you sure you want to remove:</p>
+          <h5 id="delete-item-target-name" class="fw-bold text-white mb-3">Item Name</h5>
+          <p class="text-muted small mb-0">This will remove it from your inventory. This action can be viewed in your activity audit log.</p>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="delete-confirm-execute-btn" class="btn-fresh-danger">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Recipe Detail Modal (with Cooked Action & Shopping List sync) -->
+  <div class="modal fade" id="recipeDetailModal" tabindex="-1" aria-labelledby="recipeDetailModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <span id="recipe-modal-category" class="meta-tag mb-1">Breakfast</span>
+            <h4 class="modal-title mt-1" id="recipeDetailModalTitle">Recipe Title</h4>
+          </div>
+          <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="recipe-modal-desc" class="text-muted mb-3">Description...</p>
+
+          <div class="d-flex flex-wrap gap-3 p-3 mb-4 rounded" style="background-color: var(--bg-deep); border: 1px solid var(--border-subtle);">
+            <div><i class="bi bi-clock me-1 text-lime"></i> <strong>Prep:</strong> <span id="recipe-modal-prep">10m</span></div>
+            <div><i class="bi bi-fire me-1 text-danger"></i> <strong>Cook:</strong> <span id="recipe-modal-cook">15m</span></div>
+            <div><i class="bi bi-people me-1 text-info"></i> <strong>Serves:</strong> <span id="recipe-modal-servings">2</span></div>
+            <div><i class="bi bi-bar-chart me-1 text-warning"></i> <strong>Difficulty:</strong> <span id="recipe-modal-difficulty">Easy</span></div>
+          </div>
+
+          <!-- Recipe Match Explanation Box -->
+          <div id="recipe-modal-match-box" class="p-3 mb-4 rounded" style="background-color: rgba(196, 232, 121, 0.08); border: 1px solid var(--border-strong);">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <strong id="recipe-modal-match-headline" class="text-lime">100% Match</strong>
+              <span id="recipe-modal-match-score" class="badge-good px-2 py-1 rounded small">4 / 4 Available</span>
+            </div>
+            <p id="recipe-modal-match-expl" class="small text-muted mb-0">Explanation...</p>
+          </div>
+
+          <div class="row g-4">
+            <!-- Ingredients Checklist -->
+            <div class="col-md-5">
+              <h5 class="fw-bold text-white mb-2"><i class="bi bi-card-checklist text-lime"></i> Ingredients</h5>
+              <div id="recipe-modal-ingredients-list" class="d-flex flex-column gap-1 mb-3">
+                <!-- Populated dynamically -->
+              </div>
+              <div id="recipe-modal-shopping-action-wrap" style="display: none;">
+                <button type="button" id="recipe-modal-add-missing-btn" class="btn-fresh-secondary w-100 btn-sm">
+                  <i class="bi bi-cart-plus"></i> Add Missing to Shopping List
+                </button>
+              </div>
+            </div>
+
+            <!-- Preparation Instructions -->
+            <div class="col-md-7">
+              <h5 class="fw-bold text-white mb-2"><i class="bi bi-list-ol text-lime"></i> Preparation Steps</h5>
+              <ol id="recipe-modal-instructions-list" class="ps-3 mb-3 d-flex flex-column gap-2 text-white-50 small">
+                <!-- Populated dynamically -->
+              </ol>
+
+              <div class="p-2 rounded bg-dark border border-secondary small text-muted">
+                <i class="bi bi-lightbulb-fill text-warning me-1"></i> <span id="recipe-modal-tips">Chef Tip</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" id="recipe-modal-cook-btn" class="btn-fresh-primary">
+            <i class="bi bi-check-circle-fill"></i> Mark as Cooked (Deduct Stock)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Add / Edit Shopping Item Modal -->
+  <div class="modal fade" id="shoppingItemModal" tabindex="-1" aria-labelledby="shoppingItemModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="shopping-item-form" onsubmit="App.handleSaveShoppingItem(event)">
+          <input type="hidden" id="shopping-form-id">
+          <div class="modal-header">
+            <h5 class="modal-title" id="shoppingItemModalTitle">
+              <i class="bi bi-cart-plus text-lime"></i> <span id="shopping-modal-heading">Add to Shopping List</span>
+            </h5>
+            <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Item Name with Instant Duplicate Check -->
+            <div class="mb-3">
+              <label for="shopping-form-name" class="form-label">Item Name *</label>
+              <input type="text" id="shopping-form-name" class="form-control fresh-input" placeholder="e.g. Mushrooms, Olive Oil, Bananas" required oninput="App.checkShoppingDuplicate(this.value)">
+              <!-- Duplicate alert banner -->
+              <div id="shopping-duplicate-warning" class="duplicate-alert" style="display: none;">
+                <i class="bi bi-info-circle-fill"></i>
+                <span id="shopping-duplicate-msg">Notice: Item already exists in your inventory or shopping list.</span>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <!-- Category -->
+              <div class="col-6">
+                <label for="shopping-form-category" class="form-label">Category *</label>
+                <select id="shopping-form-category" class="form-select fresh-select" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <!-- Unit -->
+              <div class="col-6">
+                <label for="shopping-form-unit" class="form-label">Unit</label>
+                <select id="shopping-form-unit" class="form-select fresh-select">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="shopping-form-qty" class="form-label">Estimated Quantity</label>
+              <input type="number" id="shopping-form-qty" class="form-control fresh-input" min="0.1" step="any" placeholder="1" value="1">
+            </div>
+
+            <div class="mb-2">
+              <label for="shopping-form-note" class="form-label">Note / Brand preference</label>
+              <input type="text" id="shopping-form-note" class="form-control fresh-input" placeholder="e.g. Organic, 250g tub, or unsweetened">
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-fresh-primary">
+              <i class="bi bi-check-lg"></i> Save Shopping Item
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Move Purchased Item to Pantry Intake Modal -->
+  <div class="modal fade" id="moveShoppingToPantryModal" tabindex="-1" aria-labelledby="moveShoppingTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="move-to-pantry-form" onsubmit="App.handleConfirmMoveToPantry(event)">
+          <input type="hidden" id="move-pantry-shopping-id">
+          <div class="modal-header">
+            <h5 class="modal-title" id="moveShoppingTitle">
+              <i class="bi bi-box-arrow-in-down text-lime"></i> Move to Pantry Inventory
+            </h5>
+            <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="text-white-50 small mb-3">
+              Specify storage location and expiry date to transfer <strong id="move-pantry-item-name" class="text-white">Item</strong> into your live pantry.
+            </p>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label for="move-pantry-qty" class="form-label">Quantity</label>
+                <input type="number" id="move-pantry-qty" class="form-control fresh-input" min="0.1" step="any" required>
+              </div>
+              <div class="col-6">
+                <label for="move-pantry-unit" class="form-label">Unit</label>
+                <select id="move-pantry-unit" class="form-select fresh-select" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="move-pantry-storage" class="form-label">Storage Location *</label>
+              <select id="move-pantry-storage" class="form-select fresh-select" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="move-pantry-expiry" class="form-label">Expiry Date *</label>
+              <input type="date" id="move-pantry-expiry" class="form-control fresh-input" required>
+            </div>
+
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="move-pantry-remove-shopping" checked style="accent-color: var(--lime);">
+              <label class="form-check-label text-white-50 small" for="move-pantry-remove-shopping">
+                Remove from Shopping List upon adding to pantry
+              </label>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-fresh-primary">
+              <i class="bi bi-check-lg"></i> Add to Pantry
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Reset Data Confirmation Modal -->
+  <div class="modal fade" id="resetDataModal" tabindex="-1" aria-labelledby="resetDataTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger" id="resetDataTitle">
+            <i class="bi bi-radioactive"></i> Reset All Data
+          </h5>
+          <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body text-center py-4">
+          <p class="text-white mb-2">Are you sure you want to restore default sample groceries?</p>
+          <p class="text-danger small mb-0">This will wipe your current custom pantry, shopping lists, and logs and re-seed the initial demonstration dataset.</p>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-fresh-danger" onclick="App.executeResetAllData()">
+            <i class="bi bi-check2"></i> Yes, Reset All
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Import JSON Backup Modal -->
+  <div class="modal fade" id="importBackupModal" tabindex="-1" aria-labelledby="importBackupTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importBackupTitle">
+            <i class="bi bi-upload text-lime"></i> Import Backup Data
+          </h5>
+          <button type="button" class="btn-close-custom" data-bs-dismiss="modal" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="text-white-50 small mb-3">Paste your exported FreshTrack 2.0 JSON data below:</p>
+          <textarea id="import-json-textarea" class="form-control fresh-input font-monospace" rows="8" placeholder="Paste JSON here..."></textarea>
+          <div id="import-error-msg" class="text-danger small mt-2" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-fresh-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn-fresh-primary" onclick="App.handleExecuteImport()">
+            <i class="bi bi-check2"></i> Restore From Backup
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: Bootstrap 5.3.3 JS Bundle + App Logic Modules -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
