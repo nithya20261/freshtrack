@@ -4,8 +4,8 @@
   "description": "FreshTrack 2.0 — Smart Food Management System",
   "main": "index.html",
   "scripts": {
-    "dev": "npx -y serve . -l 3000",
-    "start": "npx -y serve . -l 3000",
+    "dev": "node server.js",
+    "start": "node server.js",
     "build": "echo \"Static build ready\""
   },
   "keywords": [
